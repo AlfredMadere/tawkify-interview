@@ -1,0 +1,44 @@
+# Doggy Date App Feed Page PRD
+
+## Overview
+The feed page is where users can see a list of potential matches for dog dates. This page should display potential matches with relevant information about both the owner and their dog.
+
+## Requirements
+
+### Feed Page
+- Display a title: "Doggy date suggestions"
+- Implement a vertical scrollable list of potential match cards
+- Each card should display comprehensive information about the potential match
+- Use server actions for data fetching
+- Implement with React Query as specified in the project rules
+
+### Match Card Component
+- Display user information:
+  - User name
+  - User profile photo (placeholder for MVP)
+  - User age
+  - User gender
+  - User bio
+  - User's preferences (min/max age, min/max weight)
+- Display dog information:
+  - Dog name
+  - Dog breed
+  - Dog age
+  - Dog weight
+  - Dog sex
+  - Dog friendliness levels (person and dog)
+  - Dog photo (placeholder for MVP)
+  - Dog description
+- DO NOT display location information
+- Implement match functionality with accept/reject options
+
+### Technical Requirements
+- Use shadcn components for UI elements
+- Style with tailwindcss following the project's theme
+- Use a linear style for UI (simple, clean, minimal)
+- Prefer grid layouts over flex layouts when appropriate
+- Implement server actions in actions.ts files
+- Use useQuery() for data fetching in client components
+- Use useMutation() for data mutations
+- Follow the ActionResult<T> pattern for server actions
+- Implement proper error handling with toast notifications

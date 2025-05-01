@@ -1,0 +1,7 @@
+/*
+
+THis file should create a dog for each user using prisma.
+The data for the dogs can be random, with random text generated for the descriptions and random numbers for the number fields
+
+
+*/

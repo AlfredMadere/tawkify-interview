@@ -1,0 +1,4 @@
+name,email,bio,age,gender,lat,lng,minAge,maxAge,minWeight,maxWeight,dogName,dogBreed,dogAge,dogPersonFriendliness,dogDogFriendliness,dogWeight,dogSex,dogDescription
+John Doe,john@example.com,Dog lover and outdoor enthusiast,28,Male,37.7749,-122.4194,25,35,10,50,Max,Golden Retriever,3,9,8,30,Male,Friendly and energetic dog who loves to play fetch
+Jane Smith,jane@example.com,Professional dog trainer,32,Female,34.0522,-118.2437,28,40,15,60,Bella,Border Collie,4,7,6,20,Female,Intelligent and active dog who loves agility training
+Mike Johnson,mike@example.com,Hiking enthusiast with a playful pup,35,Male,40.7128,-74.0060,30,45,20,70,Rocky,German Shepherd,5,8,7,40,Male,Loyal and protective dog who loves long walks

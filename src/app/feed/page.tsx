@@ -1,18 +1,29 @@
-/*
-This is the feed page where users can see a list of potential matches.
+import { Suspense } from 'react';
+import { FeedContent } from './FeedContent';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
-Should have a title: Doggy date suggestions
+export default function FeedPage() {
+  return (
+    <div className="container py-6 max-w-4xl mx-auto">
+      <h1 className="text-3xl font-bold mb-6">Doggy date suggestions</h1>
+      
+      <ScrollArea className="h-[calc(100vh-12rem)] rounded-md border">
+        <div className="p-4">
+          <Suspense fallback={<FeedSkeleton />}>
+            <FeedContent />
+          </Suspense>
+        </div>
+      </ScrollArea>
+    </div>
+  );
+}
 
-should have a vertical scrollable list of potential match cards which include the following:
-
-- User name of the match
-- User profile photo (place holder for mvp)
-- Dog name
-- Dog breed
-- Dog age
-- Dog personality
-- Dog photo (place holder for mvp)
-
-Create a match component to display all of this info
-
-*/
+function FeedSkeleton() {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="h-96 rounded-md bg-muted animate-pulse" />
+      ))}
+    </div>
+  );
+}
