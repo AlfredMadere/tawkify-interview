@@ -1,47 +1,109 @@
-<context>
+<context>  
 # Overview  
-[Provide a high-level overview of your product here. Explain what problem it solves, who it's for, and why it's valuable.]
+**Find Puppy Play Dates** is an app designed to help dog owners connect with other local dog owners for social play dates, either in parks or private locations. It solves the common problem of dog socialization by making it easier for owners to discover and coordinate with other nearby dog owners who are also looking for playmates for their pets. The app is aimed at dog owners who want to enrich their dogs’ social lives, meet other dog lovers, and build a trusted local network.  
 
 # Core Features  
-[List and describe the main features of your product. For each feature, include:
-- What it does
-- Why it's important
-- How it works at a high level]
+- **User Profiles & Dog Profiles**  
+  - What it does: Allows users to create a profile for themselves and their dog.  
+  - Why it’s important: This is the foundation for matching; users want to know about both the owner and the dog.  
+  - How it works: A one-to-one relationship where each user has one dog profile attached.  
+
+- **Swipe/Decision Cards**  
+  - What it does: Shows a feed of potential dog-owner matches with an “interested” or “not interested” button.  
+  - Why it’s important: Enables quick, easy decisions, similar to dating apps, encouraging engagement.  
+  - How it works: Users see a list of potential matches, and can click "intersted" or not "interested" 
+
+- **Matches Section**  
+  - What it does: Displays a list of mutual matches where both parties have shown interest.  
+  - Why it’s important: Creates a sense of success and drives next actions (chat, meetups).  
+  - How it works: Uses a many-to-many join table to track matched user pairs.  
 
 # User Experience  
-[Describe the user journey and experience. Include:
-- User personas
-- Key user flows
-- UI/UX considerations]
-</context>
-<PRD>
+- **User Personas**:  
+  - Busy professionals who want convenient local playdates for their dog.  
+  - Stay-at-home individuals looking for companionship through dog activities.  
+  - Families seeking safe, vetted dog play opportunities.  
+
+- **Key User Flows**:  
+  2. Browse suggestion cards → swipe interested/not interested.  
+  3. Get notified of a mutual match → view matches section.  
+  4. Optionally message or coordinate a playdate (future enhancement).  
+
+- **UI/UX Considerations**:  
+  - Friendly, playful, dog-centric design.  
+  - Clear visual indicators of matches and actions.  
+  - Easy navigation between browsing and matches.  
+  - Mobile-first responsive design.  
+</context>  
+
+<PRD>  
 # Technical Architecture  
-[Outline the technical implementation details:
-- System components
-- Data models
-- APIs and integrations
-- Infrastructure requirements]
+- **System Components**:  
+  - Frontend (React/Next.js or similar)  
+  - Backend (Node.js with Express or FastAPI)  
+  - Database (PostgreSQL or similar relational DB)  
+
+- **Data Models**:  
+  - `User`: id, name, bio, location, contact info.  
+  - `Dog`: id, name, breed, age, personality, owner_id (FK to User).  
+  - `Match`: user_id_a, user_id_b, matched_at (timestamps).  
+
+- **APIs and Integrations**:  
+  - REST or GraphQL API to handle user data, matches, and swipe actions.  
+  - Authentication (e.g., Auth0, Firebase Auth, or custom JWT system).  
+  - Push notifications or email for match alerts (future enhancement).  
+
+- **Infrastructure Requirements**:  
+  - Cloud deployment (Vercel, AWS, or similar).  
+  - CI/CD pipeline for automated deployments.  
+  - Database backups and monitoring tools.  
 
 # Development Roadmap  
-[Break down the development process into phases:
-- MVP requirements
-- Future enhancements
-- Do not think about timelines whatsoever -- all that matters is scope and detailing exactly what needs to be build in each phase so it can later be cut up into tasks]
+- **MVP Requirements**:  
+  - User signup/login system.  
+  - User + dog profile creation/editing.  
+  - Swipe/decision card interface.  
+  - Match detection logic and display in “Matches” section.  
 
-# Logical Dependency Chain
-[Define the logical order of development:
-- Which features need to be built first (foundation)
-- Getting as quickly as possible to something usable/visible front end that works
-- Properly pacing and scoping each feature so it is atomic but can also be built upon and improved as development approaches]
+- **Future Enhancements**:  
+  - In-app messaging or coordination tools.  
+  - Search and filter capabilities (e.g., by dog size, location radius).  
+  - Group playdate creation and event management.  
+  - Ratings or reviews for playdate experiences.  
+
+# Logical Dependency Chain  
+- **Foundation**:  
+  1. Set up backend, database schema, and user authentication.  
+  2. Build basic frontend structure with profile creation and editing.  
+
+- **First Usable Frontend**:  
+  3. Implement swipe/decision card component with backend connection.  
+  4. Build “Matches” section to display mutual matches.  
+
+- **Expandable Features**:  
+  5. Add notifications or alerts for new matches.  
+  6. Layer on messaging or event planning tools.  
 
 # Risks and Mitigations  
-[Identify potential risks and how they'll be addressed:
-- Technical challenges
-- Figuring out the MVP that we can build upon
-- Resource constraints]
+- **Technical Challenges**:  
+  - Building a performant swipe system → use paginated queries and caching.  
+  - Handling mutual match logic efficiently → optimize join table queries.  
+
+- **Figuring out the MVP**:  
+  - Avoid feature creep by sticking to swipe + match display before adding messaging.  
+  - User testing on early builds to confirm value.  
+
+- **Resource Constraints**:  
+  - Limited developer time → prioritize core matching flow and keep the initial scope tight.  
+  - Budget for cloud services → start on free tiers or developer plans.  
 
 # Appendix  
-[Include any additional information:
-- Research findings
-- Technical specifications]
+- **Research Findings**:  
+  - Successful social matching apps focus on simplicity and engagement loops.  
+  - Dog owners value detailed dog profiles (breed, personality, play style).  
+
+- **Technical Specifications**:  
+  - Use Prisma or Sequelize for database ORM.  
+  - Mobile-first CSS framework (e.g., Tailwind CSS).  
+  - Use of TypeScript for improved maintainability.  
 </PRD>

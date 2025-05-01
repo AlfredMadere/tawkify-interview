@@ -14,38 +14,65 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 model User {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  createdAt DateTime @default(now())
-  items     Item[]   // Relation to items owned by this user
-}
-
-model Type {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  items       Item[]   // Relation to items of this type
-}
-
-model Item {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String   @id @default(uuid())
+  name           String
+  email          String   @unique
+  bio            String?
+  age            Int
+  gender         String
+  location       Json     // Store GPS coordinates as {lat: number, lng: number}
+  minAge         Int
+  maxAge         Int
+  minWeight      Float    // In lbs
+  maxWeight      Float    // In lbs
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
   
   // Relations
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  typeId      String
-  type        Type     @relation(fields: [typeId], references: [id])
+  dog            Dog?
+  sentMatches    Match[]  @relation("UserSentMatches")
+  receivedMatches Match[] @relation("UserReceivedMatches")
+}
+
+model Dog {
+  id                 String   @id @default(uuid())
+  name               String
+  breed              String
+  age                Int
+  personFriendliness Int      // Scale 1-10
+  dogFriendliness    Int      // Scale 1-10
+  weight             Float    // In lbs
+  sex                String
+  description        String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  
+  // Relations
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Indexes
+  @@index([userId])
+}
+
+// Explicit join table for many-to-many relationship between Users
+model Match {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  accepted    Boolean  @default(false)  // Whether the matched person accepted the match
+  
+  // Relations
+  userId      String   // User who initiated the match
+  user        User     @relation("UserSentMatches", fields: [userId], references: [id], onDelete: Cascade)
+  matchedWithId String  // User who was matched with
+  matchedWith User     @relation("UserReceivedMatches", fields: [matchedWithId], references: [id], onDelete: Cascade)
+  
+  // Ensure uniqueness of matches
+  @@unique([userId, matchedWithId])
   
   // Indexes for foreign keys
   @@index([userId])
-  @@index([typeId])
+  @@index([matchedWithId])
 }
