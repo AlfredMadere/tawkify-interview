@@ -7,7 +7,7 @@ User the schema defined in prisma/schema.prisma
 'use client';
 
 import { CsvTextareaParser } from '@/components/csv-textarea-parser';
-import { seedUsersFromCSV } from './actions';
+import { seedUsersFromObjects } from './actions';
 import { toast } from 'sonner';
 
 export default function SeedUsersPage() {
@@ -53,42 +53,71 @@ export default function SeedUsersPage() {
         description: `Processing ${data.length} records`
       });
 
-      // Process each row to ensure proper data types
-      const processedData = data.map(row => ({
-        name: row.name,
-        email: row.email,
-        bio: row.bio || null,
-        age: parseInt(row.age),
-        gender: row.gender,
-        lat: parseFloat(row.lat),
-        lng: parseFloat(row.lng),
-        minAge: parseInt(row.minAge),
-        maxAge: parseInt(row.maxAge),
-        minWeight: parseFloat(row.minWeight),
-        maxWeight: parseFloat(row.maxWeight),
-        dogName: row.dogName,
-        dogBreed: row.dogBreed,
-        dogAge: parseInt(row.dogAge),
-        dogPersonFriendliness: parseInt(row.dogPersonFriendliness),
-        dogDogFriendliness: parseInt(row.dogDogFriendliness),
-        dogWeight: parseFloat(row.dogWeight),
-        dogSex: row.dogSex,
-        dogDescription: row.dogDescription || null,
-      }));
+      // Process each row to ensure proper data types and match UserSeedData interface
+      const processedData = data.map((row, index) => {
+        // Log each row for debugging
+        console.log(`Processing row ${index}:`, row);
+        
+        const lat = parseFloat(row.lat || '0');
+        const lng = parseFloat(row.lng || '0');
+        
+        const processed = {
+          name: row.name?.trim() || '',
+          email: row.email?.trim() || '',
+          bio: row.bio?.trim() || null,
+          age: parseInt(row.age || '0'),
+          gender: row.gender?.trim() || '',
+          location: { lat, lng }, // Create the location object as required by UserSeedData
+          minAge: parseInt(row.minAge || '0'),
+          maxAge: parseInt(row.maxAge || '0'),
+          minWeight: parseFloat(row.minWeight || '0'),
+          maxWeight: parseFloat(row.maxWeight || '0'),
+          dogName: row.dogName?.trim() || '',
+          dogBreed: row.dogBreed?.trim() || '',
+          dogAge: parseInt(row.dogAge || '0'),
+          dogPersonFriendliness: parseInt(row.dogPersonFriendliness || '0'),
+          dogDogFriendliness: parseInt(row.dogDogFriendliness || '0'),
+          dogWeight: parseFloat(row.dogWeight || '0'),
+          dogSex: row.dogSex?.trim() || '',
+          dogDescription: row.dogDescription?.trim() || null,
+        };
+        
+        // Log processed row for debugging
+        console.log(`Processed row ${index}:`, processed);
+        
+        // Validate the processed data
+        if (isNaN(processed.age) || isNaN(processed.location.lat) || isNaN(processed.location.lng) || 
+            isNaN(processed.minAge) || isNaN(processed.maxAge) || 
+            isNaN(processed.minWeight) || isNaN(processed.maxWeight) || 
+            isNaN(processed.dogAge) || isNaN(processed.dogPersonFriendliness) || 
+            isNaN(processed.dogDogFriendliness) || isNaN(processed.dogWeight)) {
+          console.error(`Row ${index} has invalid numeric values:`, processed);
+        }
+        
+        return processed;
+      });
       
-      // Convert to CSV string to pass to the server action
-      const csvString = processedData.map(row => {
-        return Object.values(row).map(value => 
-          value === null ? '' : String(value)
-        ).join(',');
-      }).join('\n');
+      // Filter out rows with invalid data
+      const validData = processedData.filter(row => 
+        !isNaN(row.age) && !isNaN(row.location.lat) && !isNaN(row.location.lng) && 
+        !isNaN(row.minAge) && !isNaN(row.maxAge) && 
+        !isNaN(row.minWeight) && !isNaN(row.maxWeight) && 
+        !isNaN(row.dogAge) && !isNaN(row.dogPersonFriendliness) && 
+        !isNaN(row.dogDogFriendliness) && !isNaN(row.dogWeight) &&
+        row.name && row.email // Ensure required fields are present
+      );
       
-      // Add header row
-      const headerRow = Object.keys(processedData[0]).join(',');
-      const fullCsvString = `${headerRow}\n${csvString}`;
+      if (validData.length < processedData.length) {
+        toast.warning(`Filtered out ${processedData.length - validData.length} rows with invalid data`);
+      }
       
-      // Call the server action with the CSV string
-      const result = await seedUsersFromCSV(fullCsvString);
+      if (validData.length === 0) {
+        toast.error('No valid data to process');
+        return 0;
+      }
+      
+      // Call the server action with the valid data objects directly
+      const result = await seedUsersFromObjects(validData);
       
       if (!result.success) {
         toast.error('Failed to seed users', {

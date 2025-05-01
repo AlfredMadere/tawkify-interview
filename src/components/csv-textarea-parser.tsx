@@ -230,6 +230,10 @@ export function CsvTextareaParser({
       Papa.parse(csvText, {
         header: true, // First row is header
         skipEmptyLines: true,
+        quoteChar: '"', // Use double quotes for quoting fields
+        escapeChar: '"', // Use double quotes for escaping
+        delimiter: ',', // Use comma as delimiter
+        dynamicTyping: false, // Don't convert values to types automatically
         complete: (results) => {
           if (results.errors.length > 0) {
             toast.error('Error parsing CSV', {

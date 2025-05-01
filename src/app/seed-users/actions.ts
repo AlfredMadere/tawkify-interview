@@ -3,11 +3,12 @@
 import { prisma } from '@/lib/prisma';
 import { ActionResult } from '@/types';
 import { success, failure } from '@/lib/utils';
+import {  JsonValue } from '@/generated/prisma/runtime/library';
 
 interface UserSeedData {
   name: string;
   email: string;
-  bio: string;
+  bio: string | null;
   age: number;
   gender: string;
   location: { lat: number; lng: number };
@@ -22,7 +23,7 @@ interface UserSeedData {
   dogDogFriendliness: number;
   dogWeight: number;
   dogSex: string;
-  dogDescription: string;
+  dogDescription: string | null;
 }
 
 /**
@@ -107,7 +108,26 @@ export async function seedUsersFromCSV(csvText: string): Promise<ActionResult<{ 
     
     return success({ count: createdCount });
   } catch (error) {
-    console.error('Error seeding users:', error);
+    return failure(error);
+  }
+}
+
+/**
+ * Seed users and their dogs from processed data objects
+ * @param users Array of processed user data objects
+ * @returns Result of the seeding operation
+ */
+export async function seedUsersFromObjects(users: UserSeedData[]): Promise<ActionResult<{ count: number }>> {
+  try {
+    if (users.length === 0) {
+      return failure('No valid user data provided');
+    }
+    
+    // Create users and dogs in the database
+    const createdCount = await seedUsers(users);
+    
+    return success({ count: createdCount });
+  } catch (error) {
     return failure(error);
   }
 }
@@ -161,12 +181,12 @@ async function seedUsers(users: UserSeedData[]): Promise<number> {
               description: userData.dogDescription,
             }
           }
-        } as any // Type assertion to bypass TypeScript errors
+        } 
       });
       
       createdCount++;
     } catch (error) {
-      console.error(`Error creating user ${userData.email}:`, error);
+      console.error(`Error creating user ${userData.email}:`, error instanceof Error ? error.message : error);
       // Continue with other users
     }
   }
