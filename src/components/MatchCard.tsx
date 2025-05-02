@@ -1,6 +1,6 @@
 'use client';
 
-import { PotentialMatch, User } from '@/types';
+import { PotentialMatch, User, Dog } from '@/types';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +9,7 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { getVictimUser } from '@/lib/auth';
-import { CheckCircle2, XCircle } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
 
 interface MatchCardProps {
   match: PotentialMatch;
@@ -30,26 +30,85 @@ export function MatchCard({ match, onAccept }: MatchCardProps) {
     },
   });
   
-  // Calculate preference overlaps if current user is available
-  const preferenceOverlap = currentUser ? {
-    // Age overlap
-    ageOverlap: {
-      hasOverlap: (
-        (user.minAge <= currentUser.age && currentUser.age <= user.maxAge) &&
-        (currentUser.minAge <= user.age && user.age <= currentUser.maxAge)
-      ),
-      yourPreference: `${currentUser.minAge}-${currentUser.maxAge} years`,
-      theirPreference: `${user.minAge}-${user.maxAge} years`,
+  // Helper functions to generate mismatch messages
+  const getAgeMismatchMessage = (currentUser: User, currentUserDog: Dog | null, otherUser: User, otherDog: Dog) => {
+    // Check if your dog's age is outside their preferences
+    if (currentUserDog && (currentUserDog.age < otherUser.minAge || currentUserDog.age > otherUser.maxAge)) {
+      const ageDiff = currentUserDog.age < otherUser.minAge 
+        ? otherUser.minAge - currentUserDog.age
+        : currentUserDog.age - otherUser.maxAge;
+      
+      const direction = currentUserDog.age < otherUser.minAge ? 'younger' : 'older';
+      return `Your dog ${currentUserDog.name} is ${ageDiff} ${ageDiff === 1 ? 'year' : 'years'} ${direction} than ${otherUser.name} prefers.`;
+    }
+    
+    // Check if their dog's age is outside your preferences
+    if (otherDog.age < currentUser.minAge || otherDog.age > currentUser.maxAge) {
+      const ageDiff = otherDog.age < currentUser.minAge 
+        ? currentUser.minAge - otherDog.age
+        : otherDog.age - currentUser.maxAge;
+      
+      const direction = otherDog.age < currentUser.minAge ? 'younger' : 'older';
+      return `${otherDog.name} is ${ageDiff} ${ageDiff === 1 ? 'year' : 'years'} ${direction} than your preferred age range.`;
+    }
+    
+    return null;
+  };
+  
+  const getWeightMismatchMessage = (currentUser: User, currentUserDog: Dog | null, otherUser: User, otherDog: Dog) => {
+    // Check if your dog's weight is outside their preferences
+    if (currentUserDog && (currentUserDog.weight < otherUser.minWeight || currentUserDog.weight > otherUser.maxWeight)) {
+      const weightDiff = currentUserDog.weight < otherUser.minWeight 
+        ? otherUser.minWeight - currentUserDog.weight
+        : currentUserDog.weight - otherUser.maxWeight;
+      
+      const direction = currentUserDog.weight < otherUser.minWeight ? 'lighter' : 'heavier';
+      return `Your dog ${currentUserDog.name} is ${weightDiff} lbs ${direction} than ${otherUser.name} prefers.`;
+    }
+    
+    // Check if their dog's weight is outside your preferences
+    if (otherDog.weight < currentUser.minWeight || otherDog.weight > currentUser.maxWeight) {
+      const weightDiff = otherDog.weight < currentUser.minWeight 
+        ? currentUser.minWeight - otherDog.weight
+        : otherDog.weight - currentUser.maxWeight;
+      
+      const direction = otherDog.weight < currentUser.minWeight ? 'lighter' : 'heavier';
+      return `${otherDog.name} is ${weightDiff} lbs ${direction} than your preferred weight range.`;
+    }
+    
+    return null;
+  };
+
+  // Get the current user's dog from the user object
+  const currentUserDog = currentUser?.dog || null;
+
+  // Calculate compatibility if current user is available
+  const compatibility = currentUser && currentUserDog ? {
+    // Age compatibility
+    ageMatch: {
+      // Your dog's age matches their preferences
+      yourDogMatchesTheirPrefs: currentUserDog.age >= user.minAge && currentUserDog.age <= user.maxAge,
+      // Their dog's age matches your preferences
+      theirDogMatchesYourPrefs: dog.age >= currentUser.minAge && dog.age <= currentUser.maxAge,
+      // Get mismatch message if any
+      mismatchMessage: getAgeMismatchMessage(currentUser, currentUserDog, user, dog),
     },
-    // Weight overlap
-    weightOverlap: {
-      hasOverlap: (
-        (user.minWeight <= dog.weight && dog.weight <= user.maxWeight) &&
-        (currentUser.minWeight <= dog.weight && dog.weight <= currentUser.maxWeight)
-      ),
-      yourPreference: `${currentUser.minWeight}-${currentUser.maxWeight} lbs`,
-      theirPreference: `${user.minWeight}-${user.maxWeight} lbs`,
+    // Weight compatibility
+    weightMatch: {
+      // Your dog's weight matches their preferences
+      yourDogMatchesTheirPrefs: currentUserDog.weight >= user.minWeight && currentUserDog.weight <= user.maxWeight,
+      // Their dog's weight matches your preferences
+      theirDogMatchesYourPrefs: dog.weight >= currentUser.minWeight && dog.weight <= currentUser.maxWeight,
+      // Get mismatch message if any
+      mismatchMessage: getWeightMismatchMessage(currentUser, currentUserDog, user, dog),
     },
+    // Overall compatibility
+    isPerfectMatch: function() {
+      return this.ageMatch.yourDogMatchesTheirPrefs && 
+             this.ageMatch.theirDogMatchesYourPrefs && 
+             this.weightMatch.yourDogMatchesTheirPrefs && 
+             this.weightMatch.theirDogMatchesYourPrefs;
+    }
   } : null;
 
   // Determine the match state
@@ -193,31 +252,46 @@ export function MatchCard({ match, onAccept }: MatchCardProps) {
               <p className="text-sm text-muted-foreground">
                 {dog.name} is most comfortable around dogs between {user.minAge} and {user.maxAge} years old, weighing between {user.minWeight} and {user.maxWeight} lbs.
               </p>
-              {/* Preference Overlap */}
-              {preferenceOverlap && (
-                <div className="rounded-md bg-muted/50 p-3">
+              {/* Compatibility Information */}
+              {compatibility && (
+                <div className="rounded-md bg-muted/50 p-3 mt-3">
                   <h4 className="text-sm font-medium mb-2">Match Compatibility</h4>
                   <div className="space-y-2 text-xs">
+                    {/* Age compatibility */}
                     <div className="flex items-center justify-between">
-                      <span>Age preferences match</span>
-                      {preferenceOverlap.ageOverlap.hasOverlap ? (
+                      <span>Age compatibility</span>
+                      {compatibility.ageMatch.yourDogMatchesTheirPrefs && compatibility.ageMatch.theirDogMatchesYourPrefs ? (
                         <CheckCircle2 className="h-4 w-4 text-green-500" />
                       ) : (
-                        <XCircle className="h-4 w-4 text-red-500" />
+                        <AlertTriangle className="h-4 w-4 text-amber-500" />
                       )}
                     </div>
+                    
+                    {/* Weight compatibility */}
                     <div className="flex items-center justify-between">
-                      <span>Weight preferences match</span>
-                      {preferenceOverlap.weightOverlap.hasOverlap ? (
+                      <span>Weight compatibility</span>
+                      {compatibility.weightMatch.yourDogMatchesTheirPrefs && compatibility.weightMatch.theirDogMatchesYourPrefs ? (
                         <CheckCircle2 className="h-4 w-4 text-green-500" />
                       ) : (
-                        <XCircle className="h-4 w-4 text-red-500" />
+                        <AlertTriangle className="h-4 w-4 text-amber-500" />
                       )}
                     </div>
-                    <div className="text-muted-foreground mt-1">
-                      <div>Your preference: {preferenceOverlap.ageOverlap.yourPreference} / {preferenceOverlap.weightOverlap.yourPreference}</div>
-                      <div>Their preference: {preferenceOverlap.ageOverlap.theirPreference} / {preferenceOverlap.weightOverlap.theirPreference}</div>
-                    </div>
+                    
+                    {/* Mismatch messages */}
+                    {(!compatibility.ageMatch.yourDogMatchesTheirPrefs || 
+                      !compatibility.ageMatch.theirDogMatchesYourPrefs || 
+                      !compatibility.weightMatch.yourDogMatchesTheirPrefs || 
+                      !compatibility.weightMatch.theirDogMatchesYourPrefs) && (
+                      <div className="text-muted-foreground mt-3 space-y-1 bg-background/50 p-2 rounded">
+                        <h5 className="font-medium text-foreground">Compatibility Notes:</h5>
+                        {compatibility.ageMatch.mismatchMessage && (
+                          <div className="text-amber-600 dark:text-amber-400">{compatibility.ageMatch.mismatchMessage}</div>
+                        )}
+                        {compatibility.weightMatch.mismatchMessage && (
+                          <div className="text-amber-600 dark:text-amber-400">{compatibility.weightMatch.mismatchMessage}</div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

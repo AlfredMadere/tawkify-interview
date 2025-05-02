@@ -1,11 +1,19 @@
 import { Suspense } from 'react';
 import { FeedContent } from './FeedContent';
+import { UserPreferencesServer } from './UserPreferencesServer';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function FeedPage() {
   return (
     <div className="container py-6 max-w-4xl mx-auto">
       <h1 className="text-3xl font-bold mb-6">Doggy date suggestions</h1>
+      
+      <Suspense fallback={<div className="mb-6 space-y-4">
+        <div className="h-[140px] rounded-md bg-muted animate-pulse" />
+        <div className="h-[140px] rounded-md bg-muted animate-pulse" />
+      </div>}>
+        <UserPreferencesServer />
+      </Suspense>
       
       <ScrollArea className="h-[calc(100vh-12rem)] rounded-md border">
         <div className="p-4">
