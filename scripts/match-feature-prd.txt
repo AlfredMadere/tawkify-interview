@@ -1,0 +1,30 @@
+# Dog Matchmaking App - Match Feature PRD
+
+## Overview
+This PRD outlines the implementation of the match functionality in the Dog Matchmaking App. Users should be able to match with other users, see when matches are accepted, and receive appropriate feedback.
+
+## Requirements
+
+### Match Creation
+- When a user clicks "Match with them" on a MatchCard, create a new match in the database
+- The match should be from the current user (victim user) to the selected user
+- The match should initially have 'accepted' set to false
+- Show toast notifications for success or error when creating a match
+
+### UI Updates
+- Update the MatchCard UI based on match status
+- When a match is sent but not accepted, show "Match sent" on the button
+- When a match is accepted (mutual match), show "It's a match!" on the button
+- Disable the match button when appropriate to prevent duplicate matches
+
+### Data Management
+- Update the PotentialMatch.match with the match returned from the createMatch server action
+- Ensure proper data fetching and caching with React Query
+- Handle errors gracefully with appropriate user feedback
+
+## Technical Implementation
+- Implement createMatch server action in feed/actions.ts
+- Update MatchCard component to handle different match states
+- Use useMutation from React Query for optimistic updates
+- Use toast notifications for user feedback
+- Ensure proper typing with TypeScript

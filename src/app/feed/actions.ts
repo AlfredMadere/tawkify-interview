@@ -1,85 +1,10 @@
 'use server';
 
-import { PotentialMatch, ActionResult } from '@/types';
+import { PotentialMatch, ActionResult, Match } from '@/types';
 import { success, failure } from '@/lib/utils';
 import { getVictimUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
-// Mock data for development until we have real data
-const MOCK_POTENTIAL_MATCHES: PotentialMatch[] = [
-  {
-    user: {
-      id: '1',
-      name: 'John Doe',
-      bio: 'Dog lover and outdoor enthusiast',
-      age: 28,
-      gender: 'Male',
-      minAge: 25,
-      maxAge: 35,
-      minWeight: 10,
-      maxWeight: 50,
-    },
-    dog: {
-      id: '101',
-      name: 'Max',
-      breed: 'Golden Retriever',
-      age: 3,
-      personFriendliness: 9,
-      dogFriendliness: 8,
-      weight: 30,
-      sex: 'Male',
-      description: 'Friendly and energetic dog who loves to play fetch',
-    },
-  },
-  {
-    user: {
-      id: '2',
-      name: 'Jane Smith',
-      bio: 'Professional dog trainer',
-      age: 32,
-      gender: 'Female',
-      minAge: 28,
-      maxAge: 40,
-      minWeight: 15,
-      maxWeight: 60,
-    },
-    dog: {
-      id: '102',
-      name: 'Bella',
-      breed: 'Border Collie',
-      age: 4,
-      personFriendliness: 7,
-      dogFriendliness: 6,
-      weight: 20,
-      sex: 'Female',
-      description: 'Intelligent and active dog who loves agility training',
-    },
-  },
-  {
-    user: {
-      id: '3',
-      name: 'Mike Johnson',
-      bio: 'Hiking enthusiast with a playful pup',
-      age: 35,
-      gender: 'Male',
-      minAge: 30,
-      maxAge: 45,
-      minWeight: 20,
-      maxWeight: 70,
-    },
-    dog: {
-      id: '103',
-      name: 'Rocky',
-      breed: 'German Shepherd',
-      age: 5,
-      personFriendliness: 8,
-      dogFriendliness: 7,
-      weight: 40,
-      sex: 'Male',
-      description: 'Loyal and protective dog who loves long walks',
-    },
-  },
-];
 
 /**
  * Fetches potential matches for the current user
@@ -94,21 +19,29 @@ export async function getPotentialMatches(): Promise<ActionResult<PotentialMatch
       return failure('User not found');
     }
 
-    // For MVP, we'll use mock data instead of actual database queries
-    // In a real implementation, we would query the database based on user preferences
-    
-    // Simulate a delay to mimic a real API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    return success(MOCK_POTENTIAL_MATCHES);
-    
+ 
     // The code below would be used once we have the proper database schema set up
-    /*
     // Fetch users with dogs that match the current user's preferences
-    const potentialMatches = await prisma.user.findMany({
+    // Get existing matches where the current user is the initiator
+  const existingMatches = await prisma.match.findMany({
+    where: {
+      userId: currentUser.id,
+    },
+    select: {
+      matchedWithId: true,
+    },
+  });
+
+  // Extract the IDs of users who already have matches with the current user
+  const matchedUserIds = existingMatches.map(match => match.matchedWithId);
+
+  const potentialMatches = await prisma.user.findMany({
       where: {
-        // Exclude the current user
-        id: { not: currentUser.id },
+        // Exclude the current user and users who already have a match with the current user
+        AND: [
+          { id: { not: currentUser.id } },
+          { id: { notIn: matchedUserIds } }
+        ],
         // Match age preferences
         age: {
           gte: currentUser.minAge,
@@ -134,24 +67,64 @@ export async function getPotentialMatches(): Promise<ActionResult<PotentialMatch
       );
     });
 
+    // Get all matches for the current user
+    const userMatches = await prisma.match.findMany({
+      where: {
+        OR: [
+          { userId: currentUser.id },
+          { matchedWithId: currentUser.id }
+        ]
+      }
+    });
+
     // Transform to the expected format
-    const formattedMatches: PotentialMatch[] = filteredMatches.map(user => ({
-      user: {
-        id: user.id,
-        name: user.name,
-        bio: user.bio,
-        age: user.age,
-        gender: user.gender,
-        minAge: user.minAge,
-        maxAge: user.maxAge,
-        minWeight: user.minWeight,
-        maxWeight: user.maxWeight,
-      },
-      dog: user.dog!,
+    const formattedMatches: PotentialMatch[] = await Promise.all(filteredMatches.map(async user => {
+      // Check if there's a match from current user to this user
+      const existingMatch = userMatches.find(m => 
+        m.userId === currentUser.id && m.matchedWithId === user.id
+      );
+      
+      // Check if there's a match from this user to current user
+      const reverseMatch = userMatches.find(m => 
+        m.userId === user.id && m.matchedWithId === currentUser.id
+      );
+      
+      // Create a match object for the response
+      let match: Match = {
+        id: existingMatch?.id || '',
+        userId: currentUser.id,
+        matchedWithId: user.id,
+        accepted: false
+      };
+      
+      // If there's an existing match, use its data
+      if (existingMatch) {
+        match = existingMatch;
+      }
+      
+      // If there's a reverse match and it's accepted, mark this as accepted too
+      if (reverseMatch && reverseMatch.accepted) {
+        match.accepted = true;
+      }
+      
+      return {
+        user: {
+          id: user.id,
+          name: user.name,
+          bio: user.bio,
+          age: user.age,
+          gender: user.gender,
+          minAge: user.minAge,
+          maxAge: user.maxAge,
+          minWeight: user.minWeight,
+          maxWeight: user.maxWeight,
+        },
+        dog: user.dog!,
+        match
+      };
     }));
 
     return success(formattedMatches);
-    */
   } catch (error) {
     console.error('Error fetching potential matches:', error);
     return failure('Failed to fetch potential matches');
@@ -161,9 +134,9 @@ export async function getPotentialMatches(): Promise<ActionResult<PotentialMatch
 /**
  * Creates a match with another user
  * @param matchedWithId ID of the user to match with
- * @returns Promise<ActionResult<{ matchId: string }>> Result of the match creation
+ * @returns Promise<ActionResult<{ matchId: string, match: Match }>> Result of the match creation
  */
-export async function createMatch(matchedWithId: string): Promise<ActionResult<{ matchId: string }>> {
+export async function createMatch(matchedWithId: string): Promise<ActionResult<{ matchId: string, match: Match }>> {
   try {
     const currentUser = await getVictimUser();
     
@@ -171,44 +144,51 @@ export async function createMatch(matchedWithId: string): Promise<ActionResult<{
       return failure('User not found');
     }
 
-    // For MVP, we'll simulate a successful match creation
-    // In a real implementation, we would check for existing matches and create a new one
-    
-    // Simulate a delay to mimic a real API call
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    // Generate a fake match ID
-    const matchId = `match_${Date.now()}`;
-    
-    return success({ matchId });
-    
-    // The code below would be used once we have the proper database schema set up
-    /*
-    // Check if the match already exists
-    const existingMatch = await prisma.match.findUnique({
+    // Check if the match already exists from current user to target user
+    const existingMatch = await prisma.match.findFirst({
       where: {
-        userId_matchedWithId: {
-          userId: currentUser.id,
-          matchedWithId,
-        },
+        userId: currentUser.id,
+        matchedWithId: matchedWithId,
       },
     });
 
     if (existingMatch) {
-      return failure('Match already exists');
+      return success({ 
+        matchId: existingMatch.id,
+        match: existingMatch
+      });
     }
 
-    // Create the match
-    const match = await prisma.match.create({
-      data: {
-        userId: currentUser.id,
-        matchedWithId,
-        accepted: false,
+    // Check if there's a match from the target user to the current user
+    const reverseMatch = await prisma.match.findFirst({
+      where: {
+        userId: matchedWithId,
+        matchedWithId: currentUser.id,
       },
     });
 
-    return success({ matchId: match.id });
-    */
+    // Create the new match
+    const newMatch = await prisma.match.create({
+      data: {
+        userId: currentUser.id,
+        matchedWithId: matchedWithId,
+        // If there's a reverse match, both matches are accepted (mutual match)
+        accepted: reverseMatch ? true : false,
+      },
+    });
+
+    // If there's a reverse match, update it to accepted as well
+    if (reverseMatch) {
+      await prisma.match.update({
+        where: { id: reverseMatch.id },
+        data: { accepted: true },
+      });
+    }
+
+    return success({ 
+      matchId: newMatch.id,
+      match: newMatch
+    });
   } catch (error) {
     console.error('Error creating match:', error);
     return failure('Failed to create match');

@@ -18,33 +18,11 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { Menu, X } from 'lucide-react';
 
 const mainRoutes = [
-  { name: 'Dashboard', href: '/dashboard' },
-  { name: 'Projects', href: '/projects' },
-  { name: 'Analytics', href: '/analytics' },
+  { name: 'Feed', href: '/feed' },
+  { name: 'Mutual Matches', href: '/matches' },
+  { name: 'Seed users (dev)', href: '/seed-users' },
 ];
 
-const resourceRoutes = [
-  {
-    title: 'Documentation',
-    href: '/docs',
-    description: 'Learn how to use the platform and its features.',
-  },
-  {
-    title: 'API Reference',
-    href: '/api-reference',
-    description: 'Detailed API documentation for developers.',
-  },
-  {
-    title: 'Examples',
-    href: '/examples',
-    description: 'View example projects and implementations.',
-  },
-  {
-    title: 'Templates',
-    href: '/templates',
-    description: 'Ready-to-use templates for quick setup.',
-  },
-];
 
 export function MainNav() {
   const pathname = usePathname();

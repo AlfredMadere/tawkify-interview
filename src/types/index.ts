@@ -22,9 +22,17 @@ export interface Dog {
   description: string | null;
 }
 
+export interface Match {
+  id: string;
+  userId: string;
+  matchedWithId: string;
+  accepted: boolean;
+}
+
 export interface PotentialMatch {
   user: User;
   dog: Dog;
+  match: Match;
 }
 
 export type ActionResult<T> = 

@@ -4,9 +4,22 @@ import { useQuery } from '@tanstack/react-query';
 import { getPotentialMatches } from './actions';
 import { MatchCard } from '@/components/MatchCard';
 import { toast } from 'sonner';
-import { PotentialMatch } from '@/types';
+import { PotentialMatch, User } from '@/types';
+import { getVictimUser } from '@/lib/auth';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 
 export function FeedContent() {
+  // Fetch the current user to display their preferences
+  const { data: currentUser, isLoading: isLoadingUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: async () => {
+      const user = await getVictimUser();
+      return user;
+    },
+  });
+
+  // Fetch potential matches
   const { data, error, isLoading } = useQuery({
     queryKey: ['potentialMatches'],
     queryFn: async () => {
@@ -18,9 +31,33 @@ export function FeedContent() {
     },
   });
 
-  // Handle successful match
-  const handleMatchAccepted = (matchId: string) => {
-    toast.success(`Match created with ID: ${matchId}`);
+
+
+  // Render user preferences card
+  const renderUserPreferences = () => {
+    if (isLoadingUser || !currentUser) {
+      return null;
+    }
+
+    return (
+      <Card className="mb-6">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Your Preferences</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <h4 className="font-medium mb-1">Dog Age Range</h4>
+              <p className="text-muted-foreground">{currentUser.minAge} - {currentUser.maxAge} years</p>
+            </div>
+            <div>
+              <h4 className="font-medium mb-1">Dog Weight Range</h4>
+              <p className="text-muted-foreground">{currentUser.minWeight} - {currentUser.maxWeight} lbs</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
   };
 
   // Show error state
@@ -64,14 +101,17 @@ export function FeedContent() {
 
   // Show matches
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {data.map((match: PotentialMatch) => (
-        <MatchCard 
-          key={`${match.user.id}-${match.dog.id}`} 
-          match={match} 
-          onAccept={handleMatchAccepted}
-        />
-      ))}
+    <div>
+      {renderUserPreferences()}
+      <div className="space-y-6">
+        {data.map((match: PotentialMatch) => (
+          <MatchCard 
+            key={`${match.user.id}-${match.dog.id}`} 
+            match={match} 
+            onAccept={() => { }}
+          />
+        ))}
+      </div>
     </div>
   );
 }
